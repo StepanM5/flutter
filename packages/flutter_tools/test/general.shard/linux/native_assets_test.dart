@@ -161,6 +161,13 @@ void main() {
       ),
     );
     expect(
+      (globals.logger as BufferLogger).traceText,
+      stringContainsInOrder(<String>[
+        'Dry running native assets for linux.',
+        'Dry running native assets for linux done.',
+      ]),
+    );
+    expect(
       nativeAssetsYaml,
       projectUri.resolve('build/native_assets/linux/native_assets.yaml'),
     );
@@ -265,6 +272,13 @@ void main() {
             ],
           ),
         ),
+      );
+      expect(
+        (globals.logger as BufferLogger).traceText,
+        stringContainsInOrder(<String>[
+          'Building native assets for linux_x64 debug.',
+          'Building native assets for linux_x64 done.',
+        ]),
       );
       expect(
         nativeAssetsYaml,

@@ -154,6 +154,13 @@ void main() {
       ),
     );
     expect(
+      (globals.logger as BufferLogger).traceText,
+      stringContainsInOrder(<String>[
+        'Dry running native assets for windows.',
+        'Dry running native assets for windows done.',
+      ]),
+    );
+    expect(
       nativeAssetsYaml,
       projectUri.resolve('build/native_assets/windows/native_assets.yaml'),
     );
@@ -255,6 +262,13 @@ void main() {
             ],
           ),
         ),
+      );
+      expect(
+        (globals.logger as BufferLogger).traceText,
+        stringContainsInOrder(<String>[
+          'Building native assets for windows_x64 debug.',
+          'Building native assets for windows_x64 done.',
+        ]),
       );
       expect(
         nativeAssetsYaml,

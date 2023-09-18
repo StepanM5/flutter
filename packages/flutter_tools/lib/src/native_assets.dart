@@ -43,7 +43,7 @@ abstract class NativeAssetsBuildRunner {
   Future<DryRunResult> dryRun({
     required bool includeParentEnvironment,
     required LinkModePreference linkModePreference,
-    required OS targetOs,
+    required OS targetOS,
     required Uri workingDirectory,
   });
 
@@ -121,7 +121,7 @@ class NativeAssetsBuildRunnerImpl implements NativeAssetsBuildRunner {
   Future<DryRunResult> dryRun({
     required bool includeParentEnvironment,
     required LinkModePreference linkModePreference,
-    required OS targetOs,
+    required OS targetOS,
     required Uri workingDirectory,
   }) {
     final PackageLayout packageLayout = PackageLayout.fromPackageConfig(
@@ -131,7 +131,7 @@ class NativeAssetsBuildRunnerImpl implements NativeAssetsBuildRunner {
     return _buildRunner.dryRun(
       includeParentEnvironment: includeParentEnvironment,
       linkModePreference: linkModePreference,
-      targetOs: targetOs,
+      targetOs: targetOS,
       workingDirectory: workingDirectory,
       packageLayout: packageLayout,
     );
@@ -420,11 +420,15 @@ Future<Uri?> dryRunNativeAssetsMultipeOSes({
       ...await dryRunNativeAssetsMacOSInternal(fileSystem, projectUri, false, buildRunner),
     if (targetPlatforms.contains(build_info.TargetPlatform.linux_arm64) ||
         targetPlatforms.contains(build_info.TargetPlatform.linux_x64) ||
-        targetPlatforms.contains(build_info.TargetPlatform.windows_x64) ||
         (targetPlatforms.contains(build_info.TargetPlatform.tester) &&
             OS.current == OS.linux))
       ...await dryRunNativeAssetsLinuxWindowsInternal(
-          fileSystem, projectUri, false, buildRunner),
+          fileSystem, projectUri, false, buildRunner, OS.linux),
+    if (targetPlatforms.contains(build_info.TargetPlatform.windows_x64) ||
+        (targetPlatforms.contains(build_info.TargetPlatform.tester) &&
+            OS.current == OS.windows))
+      ...await dryRunNativeAssetsLinuxWindowsInternal(
+          fileSystem, projectUri, false, buildRunner, OS.windows),
     if (targetPlatforms.contains(build_info.TargetPlatform.ios)) ...await dryRunNativeAssetsIOSInternal(fileSystem, projectUri, buildRunner)
   ];
   final Uri nativeAssetsUri = await writeNativeAssetsYaml(nativeAssetPaths, buildUri_, fileSystem);
@@ -437,7 +441,6 @@ Uri buildUriMultiple(Uri projectUri) {
   final String buildDir = build_info.getBuildDirectory();
   return projectUri.resolve('$buildDir/native_assets/multiple/');
 }
-
 
 /// Dry run the native builds.
 ///
@@ -460,6 +463,7 @@ Future<Uri?> dryRunNativeAssetsLinuxWindows({
     projectUri,
     flutterTester,
     buildRunner,
+    os,
   );
   final Uri nativeAssetsUri = await writeNativeAssetsYaml(
     nativeAssetPaths,
@@ -474,20 +478,20 @@ Future<Iterable<Asset>> dryRunNativeAssetsLinuxWindowsInternal(
   Uri projectUri,
   bool flutterTester,
   NativeAssetsBuildRunner buildRunner,
+  OS targetOS,
 ) async {
-  const OS targetOs = OS.linux;
-  final Uri buildUri_ = nativeAssetsBuildUri(projectUri, targetOs);
+  final Uri buildUri_ = nativeAssetsBuildUri(projectUri, targetOS);
 
-  globals.logger.printTrace('Dry running native assets for $targetOs.');
+  globals.logger.printTrace('Dry running native assets for $targetOS.');
   final List<Asset> nativeAssets = (await buildRunner.dryRun(
     linkModePreference: LinkModePreference.dynamic,
-    targetOs: targetOs,
+    targetOS: targetOS,
     workingDirectory: projectUri,
     includeParentEnvironment: true,
   ))
       .assets;
   ensureNoLinkModeStatic(nativeAssets);
-  globals.logger.printTrace('Dry running native assets for $targetOs done.');
+  globals.logger.printTrace('Dry running native assets for $targetOS done.');
   final Uri? absolutePath = flutterTester ? buildUri_ : null;
   final Map<Asset, Asset> assetTargetLocations =
       _assetTargetLocationsLinuxWindows(nativeAssets, absolutePath);
@@ -513,8 +517,8 @@ Future<(Uri? nativeAssetsYaml, List<Uri> dependencies)> buildNativeAssetsLinuxWi
 }) async {
   final Target target =
       targetPlatform != null ? _getNativeTargetLinuxWindows(targetPlatform) : Target.current;
-  final OS targetOs = target.os;
-  final Uri buildUri_ = nativeAssetsBuildUri(projectUri, targetOs);
+  final OS targetOS = target.os;
+  final Uri buildUri_ = nativeAssetsBuildUri(projectUri, targetOS);
   final Directory buildDir = fileSystem.directory(buildUri_);
   if (!await buildDir.exists()) {
     // CMake requires the folder to exist to do copying.
@@ -564,10 +568,10 @@ Map<Asset, Asset> _assetTargetLocationsLinuxWindows(
 ) =>
     <Asset, Asset>{
       for (final Asset asset in nativeAssets)
-        asset: _targetLocationLinuxWindows(asset, absolutePath),
+        asset: _targetLocationSingleArch(asset, absolutePath),
     };
 
-Asset _targetLocationLinuxWindows(Asset asset, Uri? absolutePath) {
+Asset _targetLocationSingleArch(Asset asset, Uri? absolutePath) {
   final AssetPath path = asset.path;
   switch (path) {
     case AssetSystemPath _:

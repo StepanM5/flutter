@@ -21,7 +21,7 @@ class VisualStudio {
     required ProcessManager processManager,
     required Platform platform,
     required Logger logger,
-  })  : _platform = platform,
+  }) : _platform = platform,
        _fileSystem = fileSystem,
        _processUtils = ProcessUtils(processManager: processManager, logger: logger),
        _logger = logger;

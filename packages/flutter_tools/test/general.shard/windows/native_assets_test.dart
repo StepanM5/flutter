@@ -53,8 +53,7 @@ void main() {
     ProcessManager: () => FakeProcessManager.empty(),
   }, () async {
     expect(
-      await dryRunNativeAssetsLinuxWindows(
-        os: OS.windows,
+      await dryRunNativeAssetsWindows(
         projectUri: projectUri,
         fileSystem: fileSystem,
         buildRunner: FakeNativeAssetsBuildRunner(
@@ -112,8 +111,7 @@ void main() {
     await packageConfig.parent.create();
     await packageConfig.create();
     expect(
-      () => dryRunNativeAssetsLinuxWindows(
-        os: OS.windows,
+      () => dryRunNativeAssetsWindows(
         projectUri: projectUri,
         fileSystem: fileSystem,
         buildRunner: FakeNativeAssetsBuildRunner(
@@ -136,8 +134,7 @@ void main() {
     final File packageConfig = environment.projectDir.childFile('.dart_tool/package_config.json');
     await packageConfig.parent.create();
     await packageConfig.create();
-    final Uri? nativeAssetsYaml = await dryRunNativeAssetsLinuxWindows(
-      os: OS.windows,
+    final Uri? nativeAssetsYaml = await dryRunNativeAssetsWindows(
       projectUri: projectUri,
       fileSystem: fileSystem,
       buildRunner: FakeNativeAssetsBuildRunner(
@@ -286,8 +283,7 @@ void main() {
     await packageConfig.parent.create();
     await packageConfig.create();
     expect(
-      () => dryRunNativeAssetsLinuxWindows(
-        os: OS.windows,
+      () => dryRunNativeAssetsWindows(
         projectUri: projectUri,
         fileSystem: fileSystem,
         buildRunner: FakeNativeAssetsBuildRunner(

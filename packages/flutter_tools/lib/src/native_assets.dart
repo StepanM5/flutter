@@ -342,20 +342,18 @@ Future<Uri?> dryRunNativeAssets({
           buildRunner: buildRunner,
         );
       } else if (const LocalPlatform().isLinux) {
-        nativeAssetsYaml = await dryRunNativeAssetsLinuxWindows(
+        nativeAssetsYaml = await dryRunNativeAssetsLinux(
           projectUri: projectUri,
           flutterTester: true,
           fileSystem: fileSystem,
           buildRunner: buildRunner,
-          os: OS.linux,
         );
       } else if (const LocalPlatform().isWindows) {
-        nativeAssetsYaml = await dryRunNativeAssetsLinuxWindows(
+        nativeAssetsYaml = await dryRunNativeAssetsWindows(
           projectUri: projectUri,
           flutterTester: true,
           fileSystem: fileSystem,
           buildRunner: buildRunner,
-          os: OS.windows,
         );
       } else {
         await ensureNoNativeAssetsOrOsIsSupported(
@@ -368,18 +366,16 @@ Future<Uri?> dryRunNativeAssets({
       }
     case build_info.TargetPlatform.linux_arm64:
     case build_info.TargetPlatform.linux_x64:
-      nativeAssetsYaml = await dryRunNativeAssetsLinuxWindows(
+      nativeAssetsYaml = await dryRunNativeAssetsLinux(
         projectUri: projectUri,
         fileSystem: fileSystem,
         buildRunner: buildRunner,
-        os: OS.linux,
       );
     case build_info.TargetPlatform.windows_x64:
-      nativeAssetsYaml = await dryRunNativeAssetsLinuxWindows(
+      nativeAssetsYaml = await dryRunNativeAssetsWindows(
         projectUri: projectUri,
         fileSystem: fileSystem,
         buildRunner: buildRunner,
-        os: OS.windows,
       );
     case build_info.TargetPlatform.android_arm:
     case build_info.TargetPlatform.android_arm64:
@@ -422,12 +418,12 @@ Future<Uri?> dryRunNativeAssetsMultipeOSes({
         targetPlatforms.contains(build_info.TargetPlatform.linux_x64) ||
         (targetPlatforms.contains(build_info.TargetPlatform.tester) &&
             OS.current == OS.linux))
-      ...await dryRunNativeAssetsLinuxWindowsInternal(
+      ...await _dryRunNativeAssetsSingleArchitectureInternal(
           fileSystem, projectUri, false, buildRunner, OS.linux),
     if (targetPlatforms.contains(build_info.TargetPlatform.windows_x64) ||
         (targetPlatforms.contains(build_info.TargetPlatform.tester) &&
             OS.current == OS.windows))
-      ...await dryRunNativeAssetsLinuxWindowsInternal(
+      ...await _dryRunNativeAssetsSingleArchitectureInternal(
           fileSystem, projectUri, false, buildRunner, OS.windows),
     if (targetPlatforms.contains(build_info.TargetPlatform.ios)) ...await dryRunNativeAssetsIOSInternal(fileSystem, projectUri, buildRunner)
   ];
@@ -442,11 +438,41 @@ Uri buildUriMultiple(Uri projectUri) {
   return projectUri.resolve('$buildDir/native_assets/multiple/');
 }
 
+Future<Uri?> dryRunNativeAssetsLinux({
+  required NativeAssetsBuildRunner buildRunner,
+  required Uri projectUri,
+  bool flutterTester = false,
+  required FileSystem fileSystem,
+}) {
+  return _dryRunNativeAssetsSingleArchitecture(
+    buildRunner: buildRunner,
+    projectUri: projectUri,
+    flutterTester: flutterTester,
+    fileSystem: fileSystem,
+    os: OS.linux,
+  );
+}
+
+Future<Uri?> dryRunNativeAssetsWindows({
+  required NativeAssetsBuildRunner buildRunner,
+  required Uri projectUri,
+  bool flutterTester = false,
+  required FileSystem fileSystem,
+}) {
+  return _dryRunNativeAssetsSingleArchitecture(
+    buildRunner: buildRunner,
+    projectUri: projectUri,
+    flutterTester: flutterTester,
+    fileSystem: fileSystem,
+    os: OS.windows,
+  );
+}
+
 /// Dry run the native builds.
 ///
 /// This does not build native assets, it only simulates what the final paths
 /// of all assets will be so that this can be embedded in the kernel file.
-Future<Uri?> dryRunNativeAssetsLinuxWindows({
+Future<Uri?> _dryRunNativeAssetsSingleArchitecture({
   required NativeAssetsBuildRunner buildRunner,
   required Uri projectUri,
   bool flutterTester = false,
@@ -458,7 +484,8 @@ Future<Uri?> dryRunNativeAssetsLinuxWindows({
   }
 
   final Uri buildUri_ = nativeAssetsBuildUri(projectUri, os);
-  final Iterable<Asset> nativeAssetPaths = await dryRunNativeAssetsLinuxWindowsInternal(
+  final Iterable<Asset> nativeAssetPaths =
+      await _dryRunNativeAssetsSingleArchitectureInternal(
     fileSystem,
     projectUri,
     flutterTester,
@@ -473,7 +500,7 @@ Future<Uri?> dryRunNativeAssetsLinuxWindows({
   return nativeAssetsUri;
 }
 
-Future<Iterable<Asset>> dryRunNativeAssetsLinuxWindowsInternal(
+Future<Iterable<Asset>> _dryRunNativeAssetsSingleArchitectureInternal(
   FileSystem fileSystem,
   Uri projectUri,
   bool flutterTester,
@@ -568,10 +595,10 @@ Map<Asset, Asset> _assetTargetLocationsLinuxWindows(
 ) =>
     <Asset, Asset>{
       for (final Asset asset in nativeAssets)
-        asset: _targetLocationSingleArch(asset, absolutePath),
+        asset: _targetLocationSingleArchitecture(asset, absolutePath),
     };
 
-Asset _targetLocationSingleArch(Asset asset, Uri? absolutePath) {
+Asset _targetLocationSingleArchitecture(Asset asset, Uri? absolutePath) {
   final AssetPath path = asset.path;
   switch (path) {
     case AssetSystemPath _:
